@@ -223,4 +223,111 @@ ui <- fluidPage(
         ),
         
         mainPanel(
+          plotOutput("heatmap", width = "100%", height = 1000)
+        )
+      )
+    )
+  ),
+  
+  tags$div(
+    style = "display:none;width:200px;",
+    tags$script(
+      type = "text/javascript",
+      id = "clustrmaps",
+      style = "display: none;",
+      src = "//clustrmaps.com/map_v2.js?d=1pTp8xlPHrnVMW2tZxOqNNVhNVjjL51ujE8y8tbHct0&cl=ffffff&w=a"
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output, session) {
+  
+  gt_data <- eventReactive(input$simulate, {
+    gt_fig(
+      input$chr,
+      input$start,
+      input$end,
+      input$continent,
+      input$country,
+      input$location,
+      input$nuclear,
+      input$bioproject
+    )
+  })
+  
+  # sample <- eventReactive(input$simulate, {
+  #   sample_select(input$sample)
+  # })
+  
+  anno <- eventReactive(input$simulate, {
+    anno_select(mat_type, input$anno)
+  })
+  
+  observeEvent(input$simulate, {
+    
+    output$heatmap <- renderPlot({
+      pheatmap(
+        gt_data(),
+        cluster_rows = FALSE,
+        cluster_cols = TRUE,
+        show_colnames = F,
+        show_rownames = T,
+        annotation_col = anno(),
+        
+        # labels_row = label_row,
+        # annotation_col = annotation,
+        # fontsize_col = 1,
+        # row_split = gt_data[which(gt_data[,1] %in% chr_name[chr])[snp_loc],1],
+        
+        breaks = c(-1.5, -0.5, 0.5, 1.5, 2.5),
+        color = c("-1" = 'grey80', "0" = '#41b6c4', "1" = '#fde9c9', "2" = '#ffcd3c'),
+        legend_breaks = c(-1, 0, 1, 2),
+        legend_labels = c("mis", "ref", "het", "alt")
+        
+        # annotation_colors = annotation_color,
+        # border_color = NA,
+      )
+    })
+    
+    output$download2 <- downloadHandler(
+      filename = function() {
+        paste0("heatmap", ".png")
+      },
+      
+      content = function(file) {
+        # write.csv(select_gene_anno(), file)
+        
+        png(file)
+        
+        pheatmap(
+          gt_data(),
+          cluster_rows = FALSE,
+          cluster_cols = TRUE,
+          show_colnames = F,
+          show_rownames = T,
+          annotation_col = anno(),
+          
+          # labels_row = label_row,
+          # annotation_col = annotation,
+          # fontsize_col = 1,
+          # row_split = gt_data[which(gt_data[,1] %in% chr_name[chr])[snp_loc],1],
+          
+          breaks = c(-1.5, -0.5, 0.5, 1.5, 2.5),
+          color = c("-1" = 'grey80', "0" = '#41b6c4', "1" = '#fde9c9', "2" = '#ffcd3c'),
+          legend_breaks = c(-1, 0, 1, 2),
+          legend_labels = c("mis", "ref", "het", "alt")
+          
+          # annotation_colors = annotation_color,
+          # border_color = NA,
+        )
+        
+        dev.off()
+      }
+    )
+  })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
 ```
